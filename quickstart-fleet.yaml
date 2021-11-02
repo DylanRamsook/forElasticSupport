@@ -1,0 +1,86 @@
+apiVersion: agent.k8s.elastic.co/v1alpha1
+kind: Agent
+metadata:
+  name: fleet-server-quickstart
+  namespace: default
+spec:
+  version: 7.14.1
+  kibanaRef:
+    name: kibana
+  elasticsearchRefs:
+    - name: hackpack-elasticsearch-cluster
+  mode: fleet
+  fleetServerEnabled: true
+  deployment:
+    replicas: 1
+    podTemplate:
+      spec:
+        serviceAccountName: elastic-agent
+        automountServiceAccountToken: true
+        securityContext:
+          runAsUser: 0
+        volumes:
+        - name: certs
+          secret:
+            secretName: gs-ca-cert
+        containers:
+        - name: agent
+          env:
+          - name: FLEET_SERVER_ELASTICSEARCH_HOST
+            value: http://hackpack-elasticsearch-cluster-es-http.default.svc:9200
+          - name: KIBANA_FLEET_HOST
+            value: https://gs-observability-devtest.some.domain:443/kibana
+          - name: FLEET_SERVER_ES_CA
+            value: /usr/local/etc/elastic/elasticsearch-ca.pem
+          - name: KIBANA_FLEET_USERNAME
+            value: "OBFUSCATED"
+          - name: KIBANA_FLEET_PASSWORD
+            value: "OBFUSCATED"
+          - name: CERTIFICATE_AUTHORITIES
+            value: /mnt/usr/ca.crt
+          volumeMounts: 
+          - name: certs
+            mountPath: /mnt/usr
+---
+apiVersion: agent.k8s.elastic.co/v1alpha1
+kind: Agent
+metadata:
+  name: elastic-agent-quickstart
+  namespace: default
+spec:
+  version: 7.14.1
+  kibanaRef:
+    name: kibana
+  fleetServerRef:
+    name: fleet-server-quickstart
+  mode: fleet
+  daemonSet:
+    podTemplate:
+      spec:
+        serviceAccountName: elastic-agent
+        automountServiceAccountToken: true
+        securityContext:
+          runAsUser: 0
+        volumes:
+        - name: certs
+          secret:
+            secretName: gs-ca-cert
+        containers:
+        - name: agent
+          env:
+          - name: FLEET_SERVER_ELASTICSEARCH_HOST
+            value: http://hackpack-elasticsearch-cluster-es-http.default.svc:9200
+          - name: KIBANA_FLEET_HOST
+            value: https://gs-observability-devtest.some.domain:443/kibana
+          - name: FLEET_SERVER_ES_CA
+            value: /usr/local/etc/elastic/elasticsearch-ca.pem
+          - name: KIBANA_FLEET_USERNAME
+            value: "OBFUSCATED"
+          - name: KIBANA_FLEET_PASSWORD
+            value: "OBFUSCATED"
+          - name: CERTIFICATE_AUTHORITIES
+            value: /mnt/usr/ca.crt
+          volumeMounts: 
+          - name: certs
+            mountPath: /mnt/usr
+---

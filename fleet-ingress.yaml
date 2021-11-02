@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleet-srv
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      rewrite ^/fleet/(.*)$ /$1 break;
+      proxy_set_header Authorization "";
+    nginx.ingress.kubernetes.io/rewrite-target: /
+   #kubernetes.io/ingress.allow-http: "false"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: 
+      - gs-observability-devtest.us.corp
+      secretName: gs-obs-cert
+  rules:
+   - host: "gs-observability-devtest.us.corp"
+     http:
+      paths:
+      - path: "/fleet"
+        pathType: Exact
+        backend:
+          service:
+            name: fleet-server-quickstart-agent-http
+            port:
+              number: 8220
